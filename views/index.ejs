@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="Author" content="">
+	<meta name="Keywords" content="">
+	<meta name="Description" content="">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>chat</title>
+	<script src="https://cdn.socket.io/socket.io-1.3.7.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+	<link href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" rel="stylesheet">
+	<style type="text/css">
+		html{
+			-webkit-font-smoothing: antialiased;
+			min-height: 100%;
+		}
+		body{
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			font-family: "Spoqa Han Sans","맑은고딕","Malgun Gothic","Apple SD Gothic Neo","돋움",dotum,Arial,sans-serif;
+			font-weight: 400;
+			font-size: 14px;
+			color: #333;
+		}
+		*{
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			box-sizing: border-box;
+		}
+		*:before, *:after {
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			box-sizing: border-box;
+		}
+		input, button, select, textarea {
+			font-family: inherit;
+			font-size: inherit;
+			line-height: inherit;
+			-webkit-box-shadow: none;
+			-moz-box-shadow: none;
+			box-shadow: none;
+		}
+		button, input, optgroup, select, textarea {
+			margin: 0;
+			font: inherit;
+			color: inherit;
+		}
+		button:hover{
+			cursor: pointer;
+		}
+		.room-wrapper{
+			position: absolute;
+			left: 0;
+			top: 0;
+			width: 320px;
+			height: 100%;
+			border-right: 1px solid #ddd;
+			padding-top: 50px;
+		}
+		.room-list{
+			margin-top: 0;
+			list-style: none;
+			padding-left: 0;
+		}
+		.room-list > li{
+			padding: 20px 15px;
+			cursor: pointer;
+		}
+		.room-list > li:hover{
+			background-color: #f4f4f4;
+		}
+		.room-list > li.active{
+			background-color: #f4f4f4;
+		}
+		.room-wrapper > .room-header{
+			position: absolute;
+			top: 0;
+			height: 50px;
+			width: 100%;
+			border-bottom: 1px solid #ECECEC;
+			text-align: center;
+		}
+		.room-wrapper > .room-header > h1{
+			font-size: 16px;
+			color: #474A4C;
+		}
+		.room-wrapper > .room-header > button{
+			position: absolute;
+			border: 0;
+			padding: 5px;
+			background: #fff;
+			outline: none;
+		}
+		.room-wrapper > .room-header > button > i:before{
+			font-size: 28px;
+			color: #0084ff;
+		}
+		.chat-wrapper{
+			width: auto;
+			height: 100%;
+			padding-left: 340px;
+			padding-right: 220px;
+		}
+		.message-write-form{
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			width: 100%;
+		}
+		.message-write-wrapper{
+			padding-left: 320px;
+			padding-right: 200px;
+		}
+		.message-write-inner{
+			padding: 15px;
+			border-top: 1px solid #ECECEC;
+		}
+		.message-write-inner > input{
+			height: auto;
+			font-size: 14px;
+			border: 0;
+			font-size: 15px;
+			outline: none;
+			width: 100%;
+		}
+		.user-wrapper{
+			position: absolute;
+			top: 0;
+			right: 0;
+			width: 200px;
+			height: 100%;
+			border-left: 1px solid #ddd;
+		}
+		.user-list{
+			list-style: none;
+			padding-left: 0;
+			margin-top: 0;
+		}
+		.user-list > li{
+			padding: 15px 15px 15px 66px;
+			color: #474A4C;
+			position: relative;
+		}
+		.user-list > li > img{
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			position: absolute;
+			left: 15px;
+			top: 7px;
+		}
+
+
+		.nickname-input-wrap{
+			position: fixed;
+			z-index: 9999;
+			background-color: #fff;
+			display: table;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+		}
+		.nickname-input-inner{
+			display: table-cell;
+			vertical-align: middle;
+			text-align: center;
+		}
+		.nickname-input-inner input{
+			border: 1px solid rgba(0, 0, 0, .20);
+			color: rgba(0, 0, 0, 1);
+			font-size: 17px;
+			height: 42px;
+			padding: 0 16px;
+			width: 245px;
+			border-radius: 4px;
+			outline: none;
+		}
+		.nickname-input-inner input:focus{
+			border: 1px solid #0084ff;
+		}
+	</style>
+</head>
+<body>
+	<div class="nickname-input-wrap" id="nicknameForm">
+		<div class="nickname-input-inner">
+			<input type="text" placeholder="이름" id="nickname" onkeydown='if(event.which == 13){ nicknameInit() }'><br>
+			<button type="button" onclick="nicknameInit()" style="margin-top:15px;color:#0084ff;border:0;outline:none;font-size:20px;background:#fff;">확인</button">
+		</div>
+	</div>
+	<!--<input type="text" id="roomName" placeholder="방제목"><button type="button" onclick="createRoom()">확인</button>-->
+	
+	<div class="room-wrapper">
+		<div class="room-header">
+			<button type="button" onclick="" style="top:5px;left:5px;" title="설정"><i class="ion-ios-gear-outline"></i></button>
+			<h1>대화방</h1>
+			<button type="button" onclick="createRoomBtn()" style="top:5px;right:5px;" title="대화방 새로만들기"><i class="ion-ios-plus-outline"></i></button>
+		</div>
+		<ul id="roomList" class="room-list">
+			
+		</ul>
+	</div>
+	<div class="chat-wrapper">
+		<div id="chat">
+		
+		</div>
+		<div class="message-write-form">
+			<div class="message-write-wrapper">
+				<div class="message-write-inner">
+					<input type="text" id="msgbox" placeholder="메시지를 입력하세요...">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="user-wrapper">
+		<ul id="userList" class="user-list"></ul>
+	</div>
+	
+	
+	<script type="text/javascript">
+		
+		$("#msgbox").keyup(function(event) {
+			if (event.which == 13) {
+				socket.emit('send_msg',{msg:$('#msgbox').val()});
+				$('#msgbox').val('');
+			}
+		});
+
+		var socket = io();
+
+		socket.emit('load_room');
+
+		socket.on('list_room',function(data){
+			$("#roomList").empty();
+			for(var i=0; i < data.rooms.length ; i++){
+				$("#roomList").append("<li data-url='"+data.rooms[i].url+"'>"+data.rooms[i].title+"</li>");
+			}
+		});
+
+		socket.on('userlist',function(data){
+			console.log(data);
+			$("#userList").empty();
+			for(var i=0; i < data.users.length ; i++){
+				$("#userList").append("<li><img src='https://scontent.xx.fbcdn.net/hprofile-xfa1/v/t1.0-1/c15.0.50.50/p50x50/10354686_10150004552801856_220367501106153455_n.jpg?oh=de3cf921c79d63ac0e908353690899f6&oe=5785D22F'>"+data.users[i]+"</li>");
+			}
+		});
+
+		socket.on('broadcast_msg',function(data){
+			$("#chat").append("<p>"+data.msg+"</p>");
+		});
+
+		function createRoomBtn(){
+			if($("#roomList").children(".create").length == 0){
+				$el = $("<li class='active create'><input type='text' placeholder='새로운 대화방' style='border:0;background-color:#f4f4f4;outline:none;width:100%;' onkeydown='if (event.which == 13){ createRoom(this); }'></li>");
+				$("#roomList").prepend($el);
+				$el.children("input").focus();
+			}
+			
+		}
+
+		function createRoom(el){
+			if(el.value != ""){
+				$("#roomList").children(".create").remove();
+				var url = makeid();
+				socket.emit('create_room',{'title':el.value,'url':url});
+				$("#roomList").children(".create").remove();
+				$("#roomList").prepend("<li class='active' data-url='"+url+"'>"+el.value+"</li>");
+			}
+			
+		}
+
+		function makeid(){
+			var text = "";
+			var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+			for( var i=0; i < 6; i++ ) text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+			return text;
+		}
+
+		function nicknameInit(){
+			socket.emit('nickname_init',{'nickname':$("#nickname").val()});
+			$("#nicknameForm").fadeOut();
+		}
+
+		$(document).on("click", "#roomList > li", function(){
+			if($("#roomList").children(".create").length > 0){
+				$("#roomList").children(".create").remove();
+				$currCreateEl = null;
+			}
+			$("#chat").empty();
+			if($(this).data("url") != undefined){
+				$("#roomList").children("li").removeClass("active");
+				$(this).addClass("active");
+				socket.emit('join_room',{nickname:"손님2",url:$(this).data("url")});
+			}
+		});
+	</script>
+</body>
+</html>
