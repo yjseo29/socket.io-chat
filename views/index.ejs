@@ -59,6 +59,7 @@
 			height: 100%;
 			border-right: 1px solid #ddd;
 			padding-top: 50px;
+			z-index: 1000;
 		}
 		.room-list{
 			margin-top: 0;
@@ -98,11 +99,31 @@
 			font-size: 28px;
 			color: #0084ff;
 		}
+		.message-wrapper{
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			padding-left: 340px;
+			display: table;
+			z-index: 999;
+		}
+		.message-inner{
+			display: table-cell;
+			vertical-align: middle;
+			color: #C5C6C7;
+			font-size: 25px;
+			text-align: center;
+		}
 		.chat-wrapper{
 			width: auto;
 			height: 100%;
-			padding-left: 340px;
-			padding-right: 220px;
+			padding-left: 330px;
+			padding-right: 200px;
+		}
+		#chat{
+			overflow-x: hidden;
+			overflow-y: auto;
+			padding-top: 20px;
 		}
 		.message-write-form{
 			position: absolute;
@@ -115,6 +136,7 @@
 			padding-right: 200px;
 		}
 		.message-write-inner{
+			position: relative;
 			padding: 15px;
 			border-top: 1px solid #ECECEC;
 		}
@@ -125,6 +147,29 @@
 			font-size: 15px;
 			outline: none;
 			width: 100%;
+			padding-right: 35px;
+		}
+		.message-write-inner > .image-upload{
+			position: absolute;
+			top: 12px;
+			right: 13px;
+			cursor: pointer;
+			overflow: hidden;
+		}
+		.message-write-inner > .image-upload > i:before{
+			color: #C5C5C5;
+			font-size: 28px;
+		}
+		.message-write-inner > .image-upload > input{
+			position: absolute;
+			top: 0;
+			right: 0;
+			margin: 0;
+			opacity: 0;
+			-ms-filter: 'alpha(opacity=0)';
+			font-size: 200px !important;
+			direction: ltr;
+			cursor: pointer;
 		}
 		.user-wrapper{
 			position: absolute;
@@ -184,16 +229,103 @@
 		.nickname-input-inner input:focus{
 			border: 1px solid #0084ff;
 		}
+
+		.notify-message{
+			padding: 15px 0;
+			color: #7B7E80;
+		}
+		.message{
+			display: block;
+			max-width: 65%;
+			margin-bottom: 30px;
+			position: relative;
+			padding: 10px 10px;
+			background-color: #fff;
+			border-radius: 11px;
+			-webkit-transition: -webkit-transform .3s ease-out;
+			-moz-transition: -moz-transform .3s ease-out;
+			-o-transition: -o-transform .3s ease-out;
+			transition: transform .3s ease-out;
+		}
+		.message-image{
+			display: block;
+			max-width: 25%;
+			position: relative;
+			margin-bottom: 30px;
+		}
+		.message-image.left{
+			float: left;
+			margin-left: 7px;
+			margin-top: 15px;
+		}
+		.message-image.right {
+			float: right;
+			margin-right: 15px;
+			margin-top: 10px;
+		}
+		.message-image img{
+			width: 100%;
+			height: auto;
+		}
+		.message.on{
+			transform: scale(.75);
+			-webkit-transform: scale(.75);
+			opacity: 0;
+		}
+		.message-username{
+			position: absolute;
+			top: -22px;
+			left: 2px;
+			font-weight: bold;
+			white-space: nowrap;
+		}
+		.message.right {
+			float: right;
+			margin-right: 15px;
+			margin-top: 10px;
+			background-color: #047DFF;
+			color: #fff;
+		}
+		.message.left {
+			float: left;
+			margin-left: 7px;
+			margin-top: 15px;
+			background-color: #E5E5EA;
+			color: #000;
+		}
+		.message.left:after{
+			position: absolute;
+			content: " ";
+			top: 5px;
+			left: -8px;
+			width: 0;
+			height: 0;
+			border-top: 15px solid #E5E5EA;
+			border-left: 15px solid transparent;
+		}
+		.message.right:after{
+			position: absolute;
+			content: " ";
+			top: 17px;
+			right: -8px;
+			width: 0;
+			height: 0;
+			border-bottom: 15px solid #047DFF;
+			border-right: 15px solid transparent;
+		}
+		.message-line{
+			clear: both;
+		}
+
 	</style>
 </head>
 <body>
 	<div class="nickname-input-wrap" id="nicknameForm">
 		<div class="nickname-input-inner">
 			<input type="text" placeholder="이름" id="nickname" onkeydown='if(event.which == 13){ nicknameInit() }'><br>
-			<button type="button" onclick="nicknameInit()" style="margin-top:15px;color:#0084ff;border:0;outline:none;font-size:20px;background:#fff;">확인</button">
+			<button type="button" onclick="nicknameInit()" style="margin-top:15px;color:#0084ff;border:0;outline:none;font-size:20px;background:#fff;">확인</button>
 		</div>
 	</div>
-	<!--<input type="text" id="roomName" placeholder="방제목"><button type="button" onclick="createRoom()">확인</button>-->
 	
 	<div class="room-wrapper">
 		<div class="room-header">
@@ -205,7 +337,12 @@
 			
 		</ul>
 	</div>
-	<div class="chat-wrapper">
+	<div class="message-wrapper">
+		<div class="message-inner">
+			대화방을 선택해 주세요
+		</div>
+	</div>
+	<div class="chat-wrapper" style="display:none">
 		<div id="chat">
 		
 		</div>
@@ -213,21 +350,29 @@
 			<div class="message-write-wrapper">
 				<div class="message-write-inner">
 					<input type="text" id="msgbox" placeholder="메시지를 입력하세요...">
+					<span class="image-upload">
+						<i class="ion-image"></i>
+						<input type="file"accept="image/*" id="imageUpload">
+					</span>
 				</div>
 			</div>
 		</div>
 	</div>
-	<div class="user-wrapper">
+	<div class="user-wrapper" style="display:none">
 		<ul id="userList" class="user-list"></ul>
 	</div>
 	
 	
 	<script type="text/javascript">
+		var nickname;
+		var currRoomUrl;
 		
 		$("#msgbox").keyup(function(event) {
 			if (event.which == 13) {
-				socket.emit('send_msg',{msg:$('#msgbox').val()});
-				$('#msgbox').val('');
+				if($("#msgbox").val() != "") {
+					socket.emit('send_msg', {msg: $('#msgbox').val()});
+					$('#msgbox').val('');
+				}
 			}
 		});
 
@@ -238,7 +383,10 @@
 		socket.on('list_room',function(data){
 			$("#roomList").empty();
 			for(var i=0; i < data.rooms.length ; i++){
-				$("#roomList").append("<li data-url='"+data.rooms[i].url+"'>"+data.rooms[i].title+"</li>");
+				$("#roomList").prepend("<li data-url='"+data.rooms[i].url+"'>"+data.rooms[i].title+"</li>");
+			}
+			if(currRoomUrl != undefined){
+				$("#roomList").find("[data-url='"+currRoomUrl+"']").addClass("active");
 			}
 		});
 
@@ -251,7 +399,32 @@
 		});
 
 		socket.on('broadcast_msg',function(data){
-			$("#chat").append("<p>"+data.msg+"</p>");
+			if(data.type == "notify"){
+				var $message = $("<div class='notify-message'>"+data.msg+"</div>")
+				$("#chat").append($message);
+				setTimeout(function(){
+					$message.fadeOut();
+				},5000);
+			}else if(data.type == "message"){
+				var $message
+				if(nickname == data.username){
+					$message = $("<div class='message right on'>"+data.msg+"</div><div class='message-line'></div>");
+				}else{
+					$message = $("<div class='message left on'><div class='message-username'>"+data.username+"</div>"+data.msg+"</div><div class='message-line'></div>");
+			}
+				$("#chat").append($message);
+				setTimeout(function(){
+					$("#chat").scrollTop($("#chat").prop("scrollHeight"));
+					$message.removeClass("on");
+				},200);
+			}else{
+				if(nickname == data.username){
+					$("#chat").append("<div class='message-image right'><a href='"+data.msg+"' target='_blank'><img src='"+data.msg+"'></a></div><div class='message-line'></div>");
+				}else{
+					$("#chat").append("<div class='message-image left'><div class='message-username'>"+data.username+"</div><a href='"+data.msg+"' target='_blank'><img src='"+data.msg+"'></a></div><div class='message-line'></div>");
+				}
+			}
+
 		});
 
 		function createRoomBtn(){
@@ -265,11 +438,19 @@
 
 		function createRoom(el){
 			if(el.value != ""){
+				$("#chat").empty();
 				$("#roomList").children(".create").remove();
 				var url = makeid();
+				currRoomUrl = url;
 				socket.emit('create_room',{'title':el.value,'url':url});
-				$("#roomList").children(".create").remove();
-				$("#roomList").prepend("<li class='active' data-url='"+url+"'>"+el.value+"</li>");
+
+				setTimeout(function(){
+					socket.emit('join_room',{nickname:nickname,url:url});
+					$(".message-wrapper").hide();
+					$(".chat-wrapper").show();
+					$(".user-wrapper").show();
+					$("#chat").empty();
+				},200);
 			}
 			
 		}
@@ -283,21 +464,46 @@
 		}
 
 		function nicknameInit(){
-			socket.emit('nickname_init',{'nickname':$("#nickname").val()});
-			$("#nicknameForm").fadeOut();
+			if($("#nickname").val() != ""){
+				nickname = $("#nickname").val();
+				socket.emit('nickname_init',{'nickname':nickname});
+				$("#nicknameForm").fadeOut();
+			}
 		}
 
 		$(document).on("click", "#roomList > li", function(){
+			if($(this).hasClass("active")){
+				return false;
+			}
 			if($("#roomList").children(".create").length > 0){
 				$("#roomList").children(".create").remove();
-				$currCreateEl = null;
 			}
-			$("#chat").empty();
+			console.log($(this).data("url"));
 			if($(this).data("url") != undefined){
+				currRoomUrl = $(this).data("url");
+				$("#chat").empty();
 				$("#roomList").children("li").removeClass("active");
 				$(this).addClass("active");
-				socket.emit('join_room',{nickname:"손님2",url:$(this).data("url")});
+				socket.emit('join_room',{nickname:nickname,url:$(this).data("url")});
+				$(".message-wrapper").hide();
+				$(".chat-wrapper").show();
+				$(".user-wrapper").show();
 			}
+		});
+
+		$(function(){
+			$("#chat").css("height",$(document).height()-58);
+
+			$("#imageUpload").change(function(e){
+				var file = e.originalEvent.target.files[0],
+				reader = new FileReader();
+
+				console.log(file);
+				reader.onload = function(evt){
+					socket.emit('image_upload',{baseurl:evt.target.result});
+				}
+				reader.readAsDataURL(file);
+			});
 		});
 	</script>
 </body>
