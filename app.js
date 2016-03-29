@@ -5,6 +5,10 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var routes = require('./routes/index');
+var base64 = require('node-base64-image');
+var fs = require('fs');
+var mkdirp = require('mkdirp');
+var easyimg = require('easyimage');
 
 var app = express();
 var http = require('http').Server(app);
@@ -52,6 +56,8 @@ io.use(sharedsession(session));
 /*** Socket.IO 추가 ***/
 io.on('connection',function(socket){
 
+	socket.emit("chat_init", {id:socket.id});
+
 	socket.on('load_room', function(data){
 		var roomlist = new Array();
 		for(var room in rooms){
@@ -71,7 +77,14 @@ io.on('connection',function(socket){
 		if (url != undefined){
 			delete rooms[url].socket_ids[socket.id];
 			socket.broadcast.to(socket.room).emit('broadcast_msg', {msg:socket.username+"님이 대화방에서 나갔습니다.",type:"notify"});
-			socket.broadcast.to(socket.room).emit('userlist', {users:Object.keys(rooms[url].socket_ids)});
+
+			var userList = new Array();
+			for (var key in rooms[url].socket_ids) {
+				if (rooms[url].socket_ids.hasOwnProperty(key)) {
+					userList.push(rooms[url].socket_ids[key]);
+				}
+			}
+			socket.broadcast.to(socket.room).emit('userlist', {users:userList});
 			if(Object.keys(rooms[url].socket_ids).length == 0){
 				socket.leave(socket.room);
 				delete rooms[url];
@@ -109,7 +122,14 @@ io.on('connection',function(socket){
 		if(socket.room != undefined){
 			delete rooms[socket.room].socket_ids[socket.id];
 			socket.broadcast.to(socket.room).emit('broadcast_msg', {msg:socket.username+"님이 대화방에서 나갔습니다.",type:"notify"});
-			socket.broadcast.to(socket.room).emit('userlist', {users:Object.keys(rooms[socket.room].socket_ids)});
+
+			var userList = new Array();
+			for (var key in rooms[data.url].socket_ids) {
+				if (rooms[data.url].socket_ids.hasOwnProperty(key)) {
+					userList.push(rooms[data.url].socket_ids[key]);
+				}
+			}
+			socket.broadcast.to(socket.room).emit('userlist', {users:userList});
 			if(Object.keys(rooms[socket.room].socket_ids).length == 0){
 				socket.leave(socket.room);
 				delete rooms[socket.room];
@@ -129,22 +149,139 @@ io.on('connection',function(socket){
 			socket.join(url); //소켓방에 접속
 
 			rooms[url].socket_ids[socket.id] = nickname;
-			console.log(rooms);
 			io.sockets.in(url).emit('broadcast_msg', {msg:nickname+"님이 대화방에 입장하였습니다",type:"notify"});
-			io.sockets.in(url).emit('userlist', {users:rooms[url].socket_ids[Object.keys(rooms[url].socket_ids)]});
+
+			var userList = new Array();
+			for (var key in rooms[url].socket_ids) {
+				if (rooms[url].socket_ids.hasOwnProperty(key)) {
+					userList.push(rooms[url].socket_ids[key]);
+				}
+			}
+
+			io.sockets.in(url).emit('userlist', {users:userList});
 		}
+	});
+
+	/** 채팅방 나가기 **/
+	socket.on('leave_room', function(data){
+		delete rooms[socket.room].socket_ids[socket.id];
+		socket.broadcast.to(socket.room).emit('broadcast_msg', {msg:socket.username+"님이 대화방에서 나갔습니다.",type:"notify"});
+
+		var userList = new Array();
+		for (var key in rooms[socket.room].socket_ids) {
+			if (rooms[socket.room].socket_ids.hasOwnProperty(key)) {
+				userList.push(rooms[socket.room].socket_ids[key]);
+			}
+		}
+		socket.broadcast.to(socket.room).emit('userlist', {users:userList});
+		if(Object.keys(rooms[socket.room].socket_ids).length == 0){
+			socket.leave(socket.room);
+			delete rooms[socket.room];
+			var roomlist = new Array();
+			for(var room in rooms){
+				roomlist.push(rooms[room]);
+			}
+			io.sockets.emit('list_room',{rooms:roomlist});
+		}
+		socket.room = null;
 	});
  
 	/** 메시지 전송 처리 **/
 	socket.on('send_msg',function(data){
-		io.sockets.in(socket.room).emit('broadcast_msg', {msg:data.msg,username:socket.username,type:"message"});
+		var date = new Date();
+		var time;
+		if (date.getHours() <= 12) {
+			time = "오전 "+date.getHours()+":"+parseMinute(date.getMinutes());
+		}else {
+			time = "오후 "+(date.getHours()-12)+":"+parseMinute(date.getMinutes());
+		}
+		io.sockets.in(socket.room).emit('broadcast_msg', {msg:data.msg,username:socket.username,type:"message",id:socket.id,time:time});
 	});
 
 	/** 이미지 업로드 처리 **/
 	socket.on('image_upload',function(data){
-		io.sockets.in(socket.room).emit('broadcast_msg', {msg:data.baseurl,username:socket.username,type:"image"});
+		var date = new Date();
+		var time;
+		if (date.getHours() <= 12) {
+			time = "오전 "+date.getHours()+":"+parseMinute(date.getMinutes());
+		}else {
+			time = "오후 "+(date.getHours()-12)+":"+parseMinute(date.getMinutes());
+		}
+
+		//이미지 업로드 처리
+		var path = "upload/original/"+date.getFullYear()+"/"+(date.getMonth()+1)+"/";
+		var thumbPath = "upload/thumb/"+date.getFullYear()+"/"+(date.getMonth()+1)+"/";
+		var fileName = Math.floor(Date.now() / 1000)+randomString();
+
+		var options = {filename: "public/"+path+fileName};
+		var imageData = new Buffer(data.baseurl, 'base64');
+
+		try{
+			fs.statSync("public/"+path).isDirectory();
+			base64.base64decoder(imageData, options, function (err, saved) {
+				if (err) { console.log(err); throw err; }
+				//썸네일 생성
+				easyimg.thumbnail({
+					src: "public/"+path+fileName,
+					dst: "public/"+thumbPath+fileName,
+					width: 1200,
+					quality: 90
+				}).then(
+					function(image){
+						console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
+					},
+					function(err){
+						console.log(err);
+					}
+				);
+			});
+		}catch(e){
+			mkdirp("public/"+path, function(err) {
+				if(err) throw err;
+				mkdirp("public/"+thumbPath, function(err) {
+					if(err) throw err;
+					base64.base64decoder(imageData, options, function (err, saved) {
+						if (err) { console.log(err); throw err; }
+						//썸네일 생성
+						easyimg.thumbnail({
+							src: "public/"+path+fileName,
+							dst: "public/"+thumbPath+fileName,
+							width: 1200,
+							quality: 90
+						}).then(
+							function(image){
+								console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
+							},
+							function(err){
+								console.log(err);
+							}
+						);
+					});
+				});
+			});
+		}
+		console.log(fileName);
+
+		io.sockets.in(socket.room).emit('broadcast_msg', {msg:path+fileName+".jpg",username:socket.username,type:"image",id:socket.id,time:time});
 	});
-}); 
+});
+
+function parseMinute(minute){
+	if(minute.length < 10) {
+		return "0" + minute;
+	}else{
+		return minute;
+	}
+}
+
+function randomString(){
+	var text = "";
+	var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	for( var i=0; i < 4; i++ ) text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+	return text;
+}
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

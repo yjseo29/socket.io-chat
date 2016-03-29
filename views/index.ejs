@@ -11,6 +11,8 @@
 	<script src="https://cdn.socket.io/socket.io-1.3.7.js"></script>
 	<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
 	<link href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" rel="stylesheet">
+	<link href="http://fonts.googleapis.com/css?family=Open+Sans:300" rel="stylesheet">
+	<link href="http://fonts.googleapis.com/css?family=Noto+Sans:400" rel="stylesheet">
 	<style type="text/css">
 		html{
 			-webkit-font-smoothing: antialiased;
@@ -20,7 +22,7 @@
 			width: 100%;
 			height: 100%;
 			margin: 0;
-			font-family: "Spoqa Han Sans","맑은고딕","Malgun Gothic","Apple SD Gothic Neo","돋움",dotum,Arial,sans-serif;
+			font-family: "Noto Sans","맑은고딕","Malgun Gothic","Apple SD Gothic Neo","돋움",dotum,Arial,sans-serif;
 			font-weight: 400;
 			font-size: 14px;
 			color: #333;
@@ -42,6 +44,7 @@
 			-webkit-box-shadow: none;
 			-moz-box-shadow: none;
 			box-shadow: none;
+			-webkit-appearance: none;
 		}
 		button, input, optgroup, select, textarea {
 			margin: 0;
@@ -66,15 +69,28 @@
 			list-style: none;
 			padding-left: 0;
 		}
+		.room-list.create{
+			margin-top: 61px;
+		}
 		.room-list > li{
 			padding: 20px 15px;
 			cursor: pointer;
+			border-bottom: 1px solid #eee;
 		}
 		.room-list > li:hover{
 			background-color: #f4f4f4;
 		}
 		.room-list > li.active{
 			background-color: #f4f4f4;
+		}
+		.room-list > li.message{
+			text-align:center;
+			color:#aaa;
+			border-bottom: 0;
+			padding: 35px 0;
+			background-color: #fff!important;
+			cursor: default;
+			pointer-events: none;
 		}
 		.room-wrapper > .room-header{
 			position: absolute;
@@ -99,6 +115,21 @@
 			font-size: 28px;
 			color: #0084ff;
 		}
+		.room-createform{
+			position: absolute;
+			top: 0;
+			left: 0;
+			padding: 20px 15px;
+			cursor: pointer;
+			border-bottom: 1px solid #eee;
+			background-color: #f4f4f4;
+		}
+		.room-createform input{
+			border:0;
+			background-color:#f4f4f4;
+			outline:none;
+			width:100%;
+		}
 		.message-wrapper{
 			position: absolute;
 			width: 100%;
@@ -120,6 +151,32 @@
 			padding-left: 330px;
 			padding-right: 200px;
 		}
+		.chat-header{
+			display: none;
+			position: absolute;
+			top: 0;
+			height: 50px;
+			width: 100%;
+			border-bottom: 1px solid #ECECEC;
+			text-align: center;
+			background: #fff;
+			z-index: 2;
+		}
+		.chat-header > h1{
+			font-size: 16px;
+			color: #474A4C;
+		}
+		.chat-header > button{
+			position: absolute;
+			border: 0;
+			padding: 5px;
+			background: #fff;
+			outline: none;
+		}
+		.chat-header > button > i:before{
+			font-size: 28px;
+			color: #65686B;
+		}
 		#chat{
 			overflow-x: hidden;
 			overflow-y: auto;
@@ -140,7 +197,7 @@
 			padding: 15px;
 			border-top: 1px solid #ECECEC;
 		}
-		.message-write-inner > input{
+		.message-write-inner input{
 			height: auto;
 			font-size: 14px;
 			border: 0;
@@ -149,18 +206,18 @@
 			width: 100%;
 			padding-right: 35px;
 		}
-		.message-write-inner > .image-upload{
+		.message-write-inner .image-upload{
 			position: absolute;
 			top: 12px;
 			right: 13px;
 			cursor: pointer;
 			overflow: hidden;
 		}
-		.message-write-inner > .image-upload > i:before{
+		.message-write-inner .image-upload > i:before{
 			color: #C5C5C5;
 			font-size: 28px;
 		}
-		.message-write-inner > .image-upload > input{
+		.message-write-inner .image-upload > input{
 			position: absolute;
 			top: 0;
 			right: 0;
@@ -178,6 +235,27 @@
 			width: 200px;
 			height: 100%;
 			border-left: 1px solid #ddd;
+			-webkit-transition: -webkit-transform .5s ease-out;
+			-moz-transition: -moz-transform .5s ease-out;
+			-o-transition: -o-transform .5s ease-out;
+			transition: transform .5s ease-out;
+		}
+		.user-wrapper.on{
+			-webkt-transform: translateX(0);
+			transform: translateX(0);
+		}
+		.user-wrapper > .close-btn{
+			position: absolute;
+			top: 5px;
+			right: 0;
+			background: #fff;
+			border: 0;
+			font-size: 32px;
+			font-weight: 700;
+			line-height: 1;
+			color: #000;
+			opacity: .2;
+			display: none;
 		}
 		.user-list{
 			list-style: none;
@@ -188,6 +266,7 @@
 			padding: 15px 15px 15px 66px;
 			color: #474A4C;
 			position: relative;
+			overflow: hidden;
 		}
 		.user-list > li > img{
 			width: 40px;
@@ -197,7 +276,6 @@
 			left: 15px;
 			top: 7px;
 		}
-
 
 		.nickname-input-wrap{
 			position: fixed;
@@ -234,7 +312,7 @@
 			padding: 15px 0;
 			color: #7B7E80;
 		}
-		.message{
+		#chat .message{
 			display: block;
 			max-width: 65%;
 			margin-bottom: 30px;
@@ -247,53 +325,53 @@
 			-o-transition: -o-transform .3s ease-out;
 			transition: transform .3s ease-out;
 		}
-		.message-image{
+		#chat .message-image{
 			display: block;
 			max-width: 25%;
 			position: relative;
 			margin-bottom: 30px;
 		}
-		.message-image.left{
+		#chat .message-image.left{
 			float: left;
 			margin-left: 7px;
 			margin-top: 15px;
 		}
-		.message-image.right {
+		#chat .message-image.right {
 			float: right;
 			margin-right: 15px;
 			margin-top: 10px;
 		}
-		.message-image img{
+		#chat .message-image img{
 			width: 100%;
 			height: auto;
 		}
-		.message.on{
+		#chat .message.on{
 			transform: scale(.75);
 			-webkit-transform: scale(.75);
 			opacity: 0;
 		}
-		.message-username{
+		#chat .message-username{
 			position: absolute;
 			top: -22px;
 			left: 2px;
 			font-weight: bold;
 			white-space: nowrap;
 		}
-		.message.right {
+		#chat .message.right {
 			float: right;
 			margin-right: 15px;
 			margin-top: 10px;
 			background-color: #047DFF;
 			color: #fff;
 		}
-		.message.left {
+		#chat .message.left {
 			float: left;
 			margin-left: 7px;
 			margin-top: 15px;
 			background-color: #E5E5EA;
 			color: #000;
 		}
-		.message.left:after{
+		#chat .message.left:after{
 			position: absolute;
 			content: " ";
 			top: 5px;
@@ -303,7 +381,7 @@
 			border-top: 15px solid #E5E5EA;
 			border-left: 15px solid transparent;
 		}
-		.message.right:after{
+		#chat .message.right:after{
 			position: absolute;
 			content: " ";
 			top: 17px;
@@ -313,8 +391,108 @@
 			border-bottom: 15px solid #047DFF;
 			border-right: 15px solid transparent;
 		}
-		.message-line{
+		#chat .message-time{
+			position: absolute;
+			bottom: -19px;
+			right: 0;
+			color: #bbb;
+			font-size: 12px;
+			white-space: nowrap;
+		}
+		#chat .left .message-time{
+			left: 0;
+		}
+		#chat .message-line{
 			clear: both;
+		}
+		.logo{
+			display: block;
+		}
+		.logo:before{
+			color: #0084ff;
+			font-size: 98px;
+		}
+		.logo-title{
+			font-family: 'Open Sans';
+			-webkit-font-smoothing: antialiased;
+			color: rgba(0, 0, 0, 1);
+			margin-bottom: 40px;
+			font-size: 45px;
+			font-weight: 300;
+			margin-top: 0;
+			margin-bottom: 28px;
+		}
+		.logo-message{
+			color: #000;
+			font-size: 16px;
+			margin-bottom: 20px;
+		}
+
+		.spinner{
+			display: inline-block;
+			width: 18px;
+			height: 18px;
+			background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2hpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDoyRTNGMkVENTlEMjE2ODExODIyQUNEMjMwNzUzNTEzMyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDowMzIxMkU3QTcxMUUxMUUyQjdFMUNDNDg3OTE3RUY5RCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDowMzIxMkU3OTcxMUUxMUUyQjdFMUNDNDg3OTE3RUY5RCIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M2IChNYWNpbnRvc2gpIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6ODJGQzEwNTI1MDIyNjgxMTgyMkFDRDIzMDc1MzUxMzMiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6MkUzRjJFRDU5RDIxNjgxMTgyMkFDRDIzMDc1MzUxMzMiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz6COBsvAAACo0lEQVR42uyZu08UURjFZ1Y2GjQ+MIaEmODb1qVGQkMhhZ001rKN8Q+AWFjY2NqwGgsrKwq1oqAxgYagogWNxS6ymvAw+AAW3TCem5xNbibcuzM7995x4nzJL8zOzM6cc1/fd1k/CAIvy1HwMh65gdxAbiDj0WXjoeVyWXmtUqlkpgdGwCdQBTezOISmwEXQLxre1kv8qJlYNywUEX6wH+fLUYfaf7kKnQdPwAswbEDDYXAGnAZFFwYmwAC4DB6BGwnEHwE9FC6MnHRh4Fjo+w86NCHEnwrNjYILA49BM6GJg8SL+OHCwDyYVJgYlc6tSsffIojfAruu8sCswsR9cJaf74INih/nuUMa8TuuS4lZ/n0oPafIVUq0/ksSfp8x8SbyQKsn9vh5BSxq7v8t9VqQVHzbTBwj+/aBC+BtS1A4k0rP8rlkNkNDsKPMbKoa/UKilhgNl+V0STQgOK64LobBU/BOV7/I19gbJ8A5jYY/oAa+J50DdzTiPWbP8Q4ar79NAxZ5j5NirunZicCEgSmu56rY4BCKG1WuSroVq2ZiDnwA9+LuGTSrkFw2fLQ6iQ+YeLp50MsWa0R4pyidf4HtpBsaE8voVXCLz9rikGto3jcEjoJ98B7U0/yvhBA/xhqn1ROilFhW9FgPxbfmX4nH9TQMhMV7bNV1HouibpBC5zi8fvKegpSVE5koGBQvlrzX0oo1yPwhNkDXeW6X5cZ+aLNfkqpY6wYuKcS/EtlYOicnv27p+KvCxDXWVNYNDEcQ3y5UJq64MLCXULzORNOFgRnwmZN1ukPxsokFFmybYMnFKrQGnhmsd9ZIKjuy1MO38Sslk9htKWmJefM8TonwL/TAHEsKIf6NrZd0WTRQJVYjnwNpR/4rZW4gN5Dx+CvAABjBsk/oCqxuAAAAAElFTkSuQmCC);
+			background-size: 100%;
+			-webkit-animation: spin8 0.8s linear infinite;
+			-moz-animation: spin8 0.8s linear infinite;
+			-o-animation: spin8 0.8s linear infinite;
+			animation: spin8 0.8s linear infinite;
+		}
+		@keyframes spinner {
+			to {transform: rotate(360deg);}
+		}
+		@-webkit-keyframes spinner {
+			to {-webkit-transform: rotate(360deg);}
+		}
+		@-webkit-keyframes spin8{0%,12.499%{-webkit-transform:rotate(180deg);-moz-transform:rotate(180deg);-o-transform:rotate(180deg);transform:rotate(180deg)}12.5%,24.999%{-webkit-transform:rotate(225deg);-moz-transform:rotate(225deg);-o-transform:rotate(225deg);transform:rotate(225deg)}25%,37.499%{-webkit-transform:rotate(270deg);-moz-transform:rotate(270deg);-o-transform:rotate(270deg);transform:rotate(270deg)}37.5%,49.999%{-webkit-transform:rotate(315deg);-moz-transform:rotate(315deg);-o-transform:rotate(315deg);transform:rotate(315deg)}50%,62.499%{-webkit-transform:rotate(360deg);-moz-transform:rotate(360deg);-o-transform:rotate(360deg);transform:rotate(360deg)}62.5%,74.999%{-webkit-transform:rotate(405deg);-moz-transform:rotate(405deg);-o-transform:rotate(405deg);transform:rotate(405deg)}75%,87.499%{-webkit-transform:rotate(450deg);-moz-transform:rotate(450deg);-o-transform:rotate(450deg);transform:rotate(450deg)}87.5%,99.999%{-webkit-transform:rotate(495deg);-moz-transform:rotate(495deg);-o-transform:rotate(495deg);transform:rotate(495deg)}100%{-webkit-transform:rotate(100deg);-moz-transform:rotate(100deg);-o-transform:rotate(100deg);transform:rotate(100deg)}}@-moz-keyframes spin8{0%,12.499%{-webkit-transform:rotate(180deg);-moz-transform:rotate(180deg);-o-transform:rotate(180deg);transform:rotate(180deg)}12.5%,24.999%{-webkit-transform:rotate(225deg);-moz-transform:rotate(225deg);-o-transform:rotate(225deg);transform:rotate(225deg)}25%,37.499%{-webkit-transform:rotate(270deg);-moz-transform:rotate(270deg);-o-transform:rotate(270deg);transform:rotate(270deg)}37.5%,49.999%{-webkit-transform:rotate(315deg);-moz-transform:rotate(315deg);-o-transform:rotate(315deg);transform:rotate(315deg)}50%,62.499%{-webkit-transform:rotate(360deg);-moz-transform:rotate(360deg);-o-transform:rotate(360deg);transform:rotate(360deg)}62.5%,74.999%{-webkit-transform:rotate(405deg);-moz-transform:rotate(405deg);-o-transform:rotate(405deg);transform:rotate(405deg)}75%,87.499%{-webkit-transform:rotate(450deg);-moz-transform:rotate(450deg);-o-transform:rotate(450deg);transform:rotate(450deg)}87.5%,99.999%{-webkit-transform:rotate(495deg);-moz-transform:rotate(495deg);-o-transform:rotate(495deg);transform:rotate(495deg)}100%{-webkit-transform:rotate(100deg);-moz-transform:rotate(100deg);-o-transform:rotate(100deg);transform:rotate(100deg)}}@-o-keyframes spin8{0%,12.499%{-webkit-transform:rotate(180deg);-moz-transform:rotate(180deg);-o-transform:rotate(180deg);transform:rotate(180deg)}12.5%,24.999%{-webkit-transform:rotate(225deg);-moz-transform:rotate(225deg);-o-transform:rotate(225deg);transform:rotate(225deg)}25%,37.499%{-webkit-transform:rotate(270deg);-moz-transform:rotate(270deg);-o-transform:rotate(270deg);transform:rotate(270deg)}37.5%,49.999%{-webkit-transform:rotate(315deg);-moz-transform:rotate(315deg);-o-transform:rotate(315deg);transform:rotate(315deg)}50%,62.499%{-webkit-transform:rotate(360deg);-moz-transform:rotate(360deg);-o-transform:rotate(360deg);transform:rotate(360deg)}62.5%,74.999%{-webkit-transform:rotate(405deg);-moz-transform:rotate(405deg);-o-transform:rotate(405deg);transform:rotate(405deg)}75%,87.499%{-webkit-transform:rotate(450deg);-moz-transform:rotate(450deg);-o-transform:rotate(450deg);transform:rotate(450deg)}87.5%,99.999%{-webkit-transform:rotate(495deg);-moz-transform:rotate(495deg);-o-transform:rotate(495deg);transform:rotate(495deg)}100%{-webkit-transform:rotate(100deg);-moz-transform:rotate(100deg);-o-transform:rotate(100deg);transform:rotate(100deg)}}@keyframes spin8{0%,12.499%{-webkit-transform:rotate(180deg);-moz-transform:rotate(180deg);-o-transform:rotate(180deg);transform:rotate(180deg)}12.5%,24.999%{-webkit-transform:rotate(225deg);-moz-transform:rotate(225deg);-o-transform:rotate(225deg);transform:rotate(225deg)}25%,37.499%{-webkit-transform:rotate(270deg);-moz-transform:rotate(270deg);-o-transform:rotate(270deg);transform:rotate(270deg)}37.5%,49.999%{-webkit-transform:rotate(315deg);-moz-transform:rotate(315deg);-o-transform:rotate(315deg);transform:rotate(315deg)}50%,62.499%{-webkit-transform:rotate(360deg);-moz-transform:rotate(360deg);-o-transform:rotate(360deg);transform:rotate(360deg)}62.5%,74.999%{-webkit-transform:rotate(405deg);-moz-transform:rotate(405deg);-o-transform:rotate(405deg);transform:rotate(405deg)}75%,87.499%{-webkit-transform:rotate(450deg);-moz-transform:rotate(450deg);-o-transform:rotate(450deg);transform:rotate(450deg)}87.5%,99.999%{-webkit-transform:rotate(495deg);-moz-transform:rotate(495deg);-o-transform:rotate(495deg);transform:rotate(495deg)}100%{-webkit-transform:rotate(100deg);-moz-transform:rotate(100deg);-o-transform:rotate(100deg);transform:rotate(100deg)}}
+
+		@media all and (max-width:768px) {
+			html{
+				overflow: hidden;
+			}
+			.room-wrapper{
+				width: 100%;
+			}
+			.message-wrapper{
+				display: none;
+			}
+			.chat-wrapper{
+				padding-left: 0;
+				padding-right: 0;
+				z-index: 9999;
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				background: #fff;
+			}
+			.chat-header{
+				display: block;
+			}
+			#chat{
+				padding: 65px 15px 15px 15px;
+			}
+			#chat .message-image{
+				max-width: 50%;
+			}
+			.user-wrapper{
+				background: #fff;
+				border-left: 1px solid #ddd;
+				z-index: 10000;
+				-webkt-transform: translateX(200px);
+				transform: translateX(200px);
+			}
+			.user-wrapper > .close-btn{
+				display: block;
+			}
+			.user-list{
+				margin-top: 55px;
+			}
+			.message-write-wrapper{
+				padding-left: 0;
+				padding-right: 0;
+			}
 		}
 
 	</style>
@@ -322,6 +500,9 @@
 <body>
 	<div class="nickname-input-wrap" id="nicknameForm">
 		<div class="nickname-input-inner">
+			<i class="logo ion-ios-chatboxes-outline"></i>
+			<h1 class="logo-title">Chat</h1>
+			<p class="logo-message">시작하려면 닉네임을 입력해주세요</p>
 			<input type="text" placeholder="이름" id="nickname" onkeydown='if(event.which == 13){ nicknameInit() }'><br>
 			<button type="button" onclick="nicknameInit()" style="margin-top:15px;color:#0084ff;border:0;outline:none;font-size:20px;background:#fff;">확인</button>
 		</div>
@@ -333,6 +514,11 @@
 			<h1>대화방</h1>
 			<button type="button" onclick="createRoomBtn()" style="top:5px;right:5px;" title="대화방 새로만들기"><i class="ion-ios-plus-outline"></i></button>
 		</div>
+		<div class="room-createform">
+			<form action="/" onsubmit="return false;">
+			<input type="text" placeholder="새로운 대화방" onkeydown="if (event.which == 13){ createRoom(this); }">
+			</form>
+		</div>
 		<ul id="roomList" class="room-list">
 			
 		</ul>
@@ -343,22 +529,31 @@
 		</div>
 	</div>
 	<div class="chat-wrapper" style="display:none">
+		<div class="chat-header">
+			<button type="button" onclick="roomBack()" style="top:5px;left:5px;" title="뒤로"><i class="ion-ios-arrow-back"></i></button>
+			<h1 id="roomTitle">대화방제목</h1>
+			<button type="button" onclick="showUserListBtn()" style="top:5px;right:5px;" title="사용자목록"><i class="ion-ios-people"></i></button>
+		</div>
 		<div id="chat">
 		
 		</div>
 		<div class="message-write-form">
 			<div class="message-write-wrapper">
 				<div class="message-write-inner">
+					<form id="msgForm" action="/" onsubmit="return false;">
 					<input type="text" id="msgbox" placeholder="메시지를 입력하세요...">
-					<span class="image-upload">
+					<div class="spinner" id="imageLoading" style="position:absolute;top:18px;right:16px;display:none;"></div>
+					<span class="image-upload" id="imageUploadBtn">
 						<i class="ion-image"></i>
 						<input type="file"accept="image/*" id="imageUpload">
 					</span>
+					</form>
 				</div>
 			</div>
 		</div>
 	</div>
-	<div class="user-wrapper" style="display:none">
+	<div class="user-wrapper" id="userLayout" style="display:none">
+		<button type="button" class="close-btn" onclick="$('#userLayout').removeClass('on');">×</button>
 		<ul id="userList" class="user-list"></ul>
 	</div>
 	
@@ -366,24 +561,29 @@
 	<script type="text/javascript">
 		var nickname;
 		var currRoomUrl;
-		
-		$("#msgbox").keyup(function(event) {
-			if (event.which == 13) {
-				if($("#msgbox").val() != "") {
-					socket.emit('send_msg', {msg: $('#msgbox').val()});
-					$('#msgbox').val('');
-				}
-			}
+		var id;
+		var socket = io();
+		var checkPageLeave = false;
+
+		/** 페이지 나갈시 경고창 띄우기 **/
+		$(window).on("beforeunload", function(){
+			if(checkPageLeave) return "대화방에 참여중입니다.\n페이지를 나가게되면 대화방에서 나가게됩니다";
 		});
 
-		var socket = io();
-
 		socket.emit('load_room');
+
+		socket.on('chat_init',function(data){
+			console.log(data);
+			id = data.id;
+		});
 
 		socket.on('list_room',function(data){
 			$("#roomList").empty();
 			for(var i=0; i < data.rooms.length ; i++){
 				$("#roomList").prepend("<li data-url='"+data.rooms[i].url+"'>"+data.rooms[i].title+"</li>");
+			}
+			if(data.rooms.length == 0){
+				$("#roomList").prepend("<li class='message'>생성된 대화방이 없습니다.<br>상단 +버튼을 눌러 대화방을 생성하세요</li>");
 			}
 			if(currRoomUrl != undefined){
 				$("#roomList").find("[data-url='"+currRoomUrl+"']").addClass("active");
@@ -391,7 +591,6 @@
 		});
 
 		socket.on('userlist',function(data){
-			console.log(data);
 			$("#userList").empty();
 			for(var i=0; i < data.users.length ; i++){
 				$("#userList").append("<li><img src='https://scontent.xx.fbcdn.net/hprofile-xfa1/v/t1.0-1/c15.0.50.50/p50x50/10354686_10150004552801856_220367501106153455_n.jpg?oh=de3cf921c79d63ac0e908353690899f6&oe=5785D22F'>"+data.users[i]+"</li>");
@@ -407,28 +606,32 @@
 				},5000);
 			}else if(data.type == "message"){
 				var $message
-				if(nickname == data.username){
-					$message = $("<div class='message right on'>"+data.msg+"</div><div class='message-line'></div>");
+				if(id == data.id){
+					$message = $("<div class='message right on'>"+data.msg+"<div class='message-time'>"+data.time+"</div></div><div class='message-line'></div>");
 				}else{
-					$message = $("<div class='message left on'><div class='message-username'>"+data.username+"</div>"+data.msg+"</div><div class='message-line'></div>");
-			}
+					$message = $("<div class='message left on'><div class='message-username'>"+data.username+"</div>"+data.msg+"<div class='message-time'>"+data.time+"</div></div><div class='message-line'></div>");
+				}
 				$("#chat").append($message);
 				setTimeout(function(){
-					$("#chat").scrollTop($("#chat").prop("scrollHeight"));
 					$message.removeClass("on");
 				},200);
 			}else{
-				if(nickname == data.username){
-					$("#chat").append("<div class='message-image right'><a href='"+data.msg+"' target='_blank'><img src='"+data.msg+"'></a></div><div class='message-line'></div>");
+				if(id == data.id){
+					$("#chat").append("<div class='message-image right'><a href='"+data.msg+"' target='_blank'><img src='"+data.msg+"'></a><div class='message-time'>"+data.time+"</div></div><div class='message-line'></div>");
 				}else{
-					$("#chat").append("<div class='message-image left'><div class='message-username'>"+data.username+"</div><a href='"+data.msg+"' target='_blank'><img src='"+data.msg+"'></a></div><div class='message-line'></div>");
+					$("#chat").append("<div class='message-image left'><div class='message-username'>"+data.username+"</div><a href='"+data.msg+"' target='_blank'><img src='"+data.msg+"'></a><div class='message-time'>"+data.time+"</div></div><div class='message-line'></div>");
 				}
+				$("#imageUploadBtn").show();
+				$("#imageLoading").hide();
 			}
-
+			setTimeout(function(){
+				$("#chat").scrollTop($("#chat").prop("scrollHeight"));
+			},200);
 		});
 
 		function createRoomBtn(){
 			if($("#roomList").children(".create").length == 0){
+				$("#roomList").children(".message").remove();
 				$el = $("<li class='active create'><input type='text' placeholder='새로운 대화방' style='border:0;background-color:#f4f4f4;outline:none;width:100%;' onkeydown='if (event.which == 13){ createRoom(this); }'></li>");
 				$("#roomList").prepend($el);
 				$el.children("input").focus();
@@ -440,11 +643,13 @@
 			if(el.value != ""){
 				$("#chat").empty();
 				$("#roomList").children(".create").remove();
+				$("#roomTitle").html(el.value);
 				var url = makeid();
 				currRoomUrl = url;
 				socket.emit('create_room',{'title':el.value,'url':url});
 
 				setTimeout(function(){
+					checkPageLeave = true;
 					socket.emit('join_room',{nickname:nickname,url:url});
 					$(".message-wrapper").hide();
 					$(".chat-wrapper").show();
@@ -471,6 +676,27 @@
 			}
 		}
 
+		function roomBack(){
+			$("#chat").empty();
+			$("#roomList").children("li").removeClass("active");
+			$(".chat-wrapper").hide();
+			socket.emit('leave_room');
+			checkPageLeave = false;
+		}
+
+		function showUserListBtn(){
+			$("#userLayout").addClass("on");
+		}
+
+		$("#msgbox").keyup(function(event) {
+			if (event.which == 13) {
+				if($("#msgbox").val() != "") {
+					socket.emit('send_msg', {msg: $('#msgbox').val()});
+					$('#msgbox').val('');
+				}
+			}
+		});
+
 		$(document).on("click", "#roomList > li", function(){
 			if($(this).hasClass("active")){
 				return false;
@@ -478,29 +704,48 @@
 			if($("#roomList").children(".create").length > 0){
 				$("#roomList").children(".create").remove();
 			}
-			console.log($(this).data("url"));
 			if($(this).data("url") != undefined){
+				checkPageLeave = true;
 				currRoomUrl = $(this).data("url");
 				$("#chat").empty();
 				$("#roomList").children("li").removeClass("active");
 				$(this).addClass("active");
 				socket.emit('join_room',{nickname:nickname,url:$(this).data("url")});
+				$("#roomTitle").html($(this).text());
 				$(".message-wrapper").hide();
 				$(".chat-wrapper").show();
 				$(".user-wrapper").show();
 			}
+
+			$("#msgForm").submit(function(){
+				if($("#msgbox").val() != "") {
+					socket.emit('send_msg', {msg: $('#msgbox').val()});
+					$('#msgbox').val('');
+				}
+			});
 		});
 
 		$(function(){
 			$("#chat").css("height",$(document).height()-58);
 
 			$("#imageUpload").change(function(e){
+				$("#imageUploadBtn").hide();
+				$("#imageLoading").show();
 				var file = e.originalEvent.target.files[0],
 				reader = new FileReader();
 
-				console.log(file);
-				reader.onload = function(evt){
+				reader.addEventListener("load", function () {
+					socket.emit('image_upload',{baseurl:reader.result.replace(/^data:image\/(png|jpg|gif|jpeg);base64,/, "")});
+				}, false);
+
+				/*reader.onload = function(evt){
 					socket.emit('image_upload',{baseurl:evt.target.result});
+				}*/
+
+				reader.onerror = function (e) {
+					alert("사진전송이 실패하였습니다");
+					$("#imageUploadBtn").show();
+					$("#imageLoading").hide();
 				}
 				reader.readAsDataURL(file);
 			});
