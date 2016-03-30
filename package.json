@@ -1,7 +1,12 @@
 {
+  "author": "yjseo29",
   "name": "socket.io-chat",
-  "version": "0.0.0",
+  "description": "node.js기반 socket.io을 이용한 실시간 웹채팅",
+  "version": "0.1.0",
+  "homepage": "http://yjteam.co.kr",
+  "repository": "https://github.com/yjseo29/socket.io-chat.git",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "start": "node ./bin/www"
   },
