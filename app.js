@@ -8,7 +8,7 @@ var routes = require('./routes/index');
 var base64 = require('node-base64-image');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
-var easyimg = require('easyimage');
+var gm = require('gm').subClass({imageMagick: true});
 
 var app = express();
 var http = require('http').Server(app);
@@ -219,21 +219,22 @@ io.on('connection',function(socket){
 		try{
 			fs.statSync("public/"+path).isDirectory();
 			base64.base64decoder(imageData, options, function (err, saved) {
-				if (err) { console.log(err); throw err; }
-				//썸네일 생성
-				easyimg.thumbnail({
-					src: "public/"+path+fileName,
-					dst: "public/"+thumbPath+fileName,
-					width: 1200,
-					quality: 90
-				}).then(
-					function(image){
-						console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
-					},
-					function(err){
-						console.log(err);
+				fs.stat("public/"+path+fileName+".jpg", function(err, stat) {
+					if (err) { console.log(err); throw err; }
+
+					if(stat.size > 500000){
+						//썸네일 생성
+						gm("public/"+path+fileName+".jpg")
+							.quality(80)
+							.resize(1000, 1000)
+							.autoOrient()
+							.write("public/"+thumbPath+fileName+".jpg", function (err) {
+								//if (!err) console.log('done');
+								io.sockets.in(socket.room).emit('broadcast_msg', {msg:thumbPath+fileName+".jpg",username:socket.username,type:"image",id:socket.id,time:time});
+							});
 					}
-				);
+				});
+				if (err) { console.log(err); throw err; }
 			});
 		}catch(e){
 			mkdirp("public/"+path, function(err) {
@@ -242,32 +243,30 @@ io.on('connection',function(socket){
 					if(err) throw err;
 					base64.base64decoder(imageData, options, function (err, saved) {
 						if (err) { console.log(err); throw err; }
-						//썸네일 생성
-						easyimg.thumbnail({
-							src: "public/"+path+fileName,
-							dst: "public/"+thumbPath+fileName,
-							width: 1200,
-							quality: 90
-						}).then(
-							function(image){
-								console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
-							},
-							function(err){
-								console.log(err);
+
+						fs.stat("public/"+path+fileName+".jpg", function(err, stat) {
+							if (err) { console.log(err); throw err; }
+							if(stat.size > 500000){
+								//썸네일 생성
+								gm("public/"+path+fileName+".jpg")
+									.quality(80)
+									.resize(1000, 1000)
+									.autoOrient()
+									.write("public/"+thumbPath+fileName+".png", function (err) {
+										//if (!err) console.log('done');
+										io.sockets.in(socket.room).emit('broadcast_msg', {msg:thumbPath+fileName+".jpg",username:socket.username,type:"image",id:socket.id,time:time});
+									});
 							}
-						);
+						});
 					});
 				});
 			});
 		}
-		console.log(fileName);
-
-		io.sockets.in(socket.room).emit('broadcast_msg', {msg:path+fileName+".jpg",username:socket.username,type:"image",id:socket.id,time:time});
 	});
 });
 
 function parseMinute(minute){
-	if(minute.length < 10) {
+	if(minute < 10) {
 		return "0" + minute;
 	}else{
 		return minute;

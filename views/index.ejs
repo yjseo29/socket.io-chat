@@ -116,13 +116,15 @@
 			color: #0084ff;
 		}
 		.room-createform{
+			width: 100%;
 			position: absolute;
-			top: 0;
+			top: 50px;
 			left: 0;
-			padding: 20px 15px;
+			padding: 19px 15px;
 			cursor: pointer;
 			border-bottom: 1px solid #eee;
 			background-color: #f4f4f4;
+			display: none;
 		}
 		.room-createform input{
 			border:0;
@@ -514,9 +516,9 @@
 			<h1>대화방</h1>
 			<button type="button" onclick="createRoomBtn()" style="top:5px;right:5px;" title="대화방 새로만들기"><i class="ion-ios-plus-outline"></i></button>
 		</div>
-		<div class="room-createform">
-			<form action="/" onsubmit="return false;">
-			<input type="text" placeholder="새로운 대화방" onkeydown="if (event.which == 13){ createRoom(this); }">
+		<div class="room-createform" id="roomCreateForm">
+			<form id="roomCrtForm" action="/" onsubmit="return false;">
+			<input type="text" placeholder="새로운 대화방" id="roomTitleInput" onkeydown="if (event.which == 13){ createRoom(); }">
 			</form>
 		</div>
 		<ul id="roomList" class="room-list">
@@ -630,23 +632,30 @@
 		});
 
 		function createRoomBtn(){
-			if($("#roomList").children(".create").length == 0){
+			$("#roomCreateForm").show();
+			$("#roomList").children(".message").remove();
+			$("#roomList").addClass("create");
+			$("#roomTitleInput").val("").focus();
+
+			/*if($("#roomList").children(".create").length == 0){
 				$("#roomList").children(".message").remove();
 				$el = $("<li class='active create'><input type='text' placeholder='새로운 대화방' style='border:0;background-color:#f4f4f4;outline:none;width:100%;' onkeydown='if (event.which == 13){ createRoom(this); }'></li>");
 				$("#roomList").prepend($el);
 				$el.children("input").focus();
-			}
+			}*/
 			
 		}
 
-		function createRoom(el){
-			if(el.value != ""){
+		function createRoom(){
+			if($("#roomTitleInput").val() != ""){
 				$("#chat").empty();
-				$("#roomList").children(".create").remove();
-				$("#roomTitle").html(el.value);
+				$("#roomCreateForm").hide();
+				$("#roomList").removeClass("create");
+				$("#roomTitle").html($("#roomTitleInput").val());
+
 				var url = makeid();
 				currRoomUrl = url;
-				socket.emit('create_room',{'title':el.value,'url':url});
+				socket.emit('create_room',{'title':$("#roomTitleInput").val(),'url':url});
 
 				setTimeout(function(){
 					checkPageLeave = true;
@@ -722,6 +731,10 @@
 					socket.emit('send_msg', {msg: $('#msgbox').val()});
 					$('#msgbox').val('');
 				}
+			});
+
+			$("#roomCrtForm").submit(function(){
+				createRoom();
 			});
 		});
 

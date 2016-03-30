@@ -19,6 +19,6 @@
     "node-base64-image": "*",
     "mkdirp": "*",
     "imagemagick": "*",
-    "easyimage": "*"
+    "gm" : "*"
   }
 }
